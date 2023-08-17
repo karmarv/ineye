@@ -1,57 +1,26 @@
-# conda create --name ineye --clone dfly
+# conda create --name in2 --clone ineye
 # conda env create -n ineye --file environment.yml --force
 # conda env update -n ineye --file environment.yml --prune
 # conda env remove -n ineye
-# Python 3.7 works for Ubuntu 18+ and Python 3.6 for MacOS environment
+# Python 3.7 works for Ubuntu 18+ and Python 3.8 for MacOS environment
 name: ineye
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
-  - pip=22.2.2
-  - git=2.37.1
-  - requests=2.21.0
-  - jupyterlab=3.4.4
-  - ipywidgets=7.7.1
-  - tqdm=4.64.0
-  - pyyaml=6.0
-  - pytest=7.1.2
-  - pandas=1.3.5
-  - scipy=1.7.3
-  - pillow=9.2.0
-  - matplotlib=3.5.2
-  - scikit-learn=1.0.2
-  - scikit-image=0.19.3
+  - python=3.8
+  - pip
+  - jupyterlab
+  - tqdm
+  - pandas
+  - pillow
+  - matplotlib
+  - scikit-learn
+  - scikit-image
+  - scipy
   - pip:
-    - PyQt6==6.4.0
-    - easyocr==1.6.2
+    - PyQt6
     - opencv-python==4.5.2.54
     - opencv-contrib-python==4.5.2.54
     - opencv-python-headless==4.5.2.54
-    - ffmpeg-python==0.2.0
-    - setuptools==59.8.0
-    - tensorboard==2.9.1
-    - requests~=2.21.0
-    - six~=1.12.0
-    - termcolor>=1.1
-    - yacs>=0.1.6
-    - build==0.8.0
-    - werkzeug==2.1.2
-    - jsonify==0.5
-    - imutils==0.5.4
-    - flask==2.0.3
-    - flask-cors==3.0.10
-    - flask-restx>=0.5.1
-    - cloudpickle==2.1.0
-    - pyarmor==7.7.0
-    - python-minifier==2.6.0
-    - azure-storage-blob==12.13.1
-    - azure_identity==1.12.0
-    - pipreqs==0.4.11
-    - timm==0.5.4
-    - redis==4.4.0 
-    - rq==1.11.1 
-    - rq-dashboard==0.6.1 
-    - click==7.1.2
-    - tensorflow-cpu==2.7.4
+

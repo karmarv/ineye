@@ -17,16 +17,19 @@ Additional Instructions to Kick-off Environment
 
 - Build Docker Environment
 ```bash
-cd docker
-docker build  -f Dockerfile --network=host --build-arg USER_ID=$UID -t ineye:v0 .
+docker build -f Dockerfile.GPU --network=host --build-arg USER_ID=$UID -t ineye:v0 .
+#or
+docker build -f Dockerfile.CPU --network=host --build-arg USER_ID=$UID -t ineye:v0.jammy.cpu .
 ```
 - Path environments
 ```bash
-export COCO_PATH="/data"
-export CODE_PATH="/code"
+export DATA_PATH="./data"
+export CODE_PATH="./"
 ```
 - Docker Environment
 ```bash
-docker run -it --gpus '"device=0"' --network=host --rm -v $(realpath $CODE_PATH):/home/ml/det2 -v $(realpath $COCO_PATH):/data  -p 8888:8888 -p 6006:6006 --shm-size=8gb --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" --name=ineye ineye:v0
+docker run -it --gpus '"device=0"' --network=host --rm -v $(realpath $CODE_PATH):/home/ml/code -v $(realpath $DATA_PATH):/data  -p 8888:8888 -p 6006:6006 --shm-size=8gb --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" --name=ineye ineye:v0
+#or
+docker run -it --network=host --rm -v $(realpath $CODE_PATH):/home/ml/code -v $(realpath $DATA_PATH):/data  -p 8888:8888 -p 6006:6006 --shm-size=8gb --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" --name=ineye ineye:v0.jammy.cpu
 ```
 - Preview Jupyter over forwarded ports at http://127.0.0.1:8888/lab
