@@ -9,6 +9,8 @@ import cv2 as cv
 import numpy as np
 from tqdm import tqdm
 
+import detect 
+
 """ 
     Print the log with timestamp 
 """
@@ -64,7 +66,7 @@ def plot_video_frames(video_infile, do_visualize=True):
         good_frames = 0
         bad_frames = 0
 
-        cv_window_name = os.path.basename(video_infile)
+        cv_window_name = "FPS:{}, Frames:{}, Video:{}".format(fps_video, frame_count, os.path.basename(video_infile))
         def onCurrentFrameTrackbarChange(trackbarValue):
             pprint("Current Frames Value: {}".format(trackbarValue))
             pass
@@ -81,6 +83,7 @@ def plot_video_frames(video_infile, do_visualize=True):
 
             if do_visualize:
                 cv.setTrackbarPos('current-frame', cv_window_name, frame_id)
+                detect.detect(img_from_frame, do_overlay=True)
                 cv.imshow(cv_window_name, img_from_frame)
 
                 key = cv.waitKey(1) & 0xFF
@@ -109,6 +112,13 @@ def plot_video_frames(video_infile, do_visualize=True):
 Usage: 
     Download and extract frames from the video for assessment
     Check the correctness of Metadata
+
+    python viz.py --video data/VIRAT_S_010204_05_000856_000890.mp4
+    python viz.py --video data/VIRAT_S_050201_05_000890_000944.mp4
+
+    python viz.py --video "/home/rahul/workspace/data/nbcuni/ride-safety/Shared - Hitachi/Fly 04 4.4/Fly 04 4.4/usf simpsons south fly 04 4.4 - 0900 to 1200.avi"
+    python viz.py --video "/home/rahul/workspace/data/nbcuni/ride-safety/Shared - Hitachi/Fly 08 5.4/Fly 08 5.4/usf simpsons south fly 08 5.4 - 0900 to 1200.avi"
+
 """
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description='Download and process CCTV videos')
