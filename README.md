@@ -1,8 +1,9 @@
 # INEYE
-Intelligent computer vision system 
+Data Exploraiton and Sampling Toolkit for Videos. 
+- Visualize video streams and run basic detections
+- Sample frames at fixed frequency or based on detections 
 
-
-Functions:
+##### Future Functions:
 - Multi Camera Capture (10 FPS at an interval-period of 1 Second)
 - Detect object on a configured part/zone of an image 
 - Detect trajectory on the detected object
@@ -49,16 +50,49 @@ python viz.py --video data/VIRAT_S_010204_05_000856_000890.mp4
 --- 
 
 ## OpenCV - Build Instructions
-
+- Download
+```
+cd ~/workspace/lib
+git clone https://github.com/opencv/opencv.git --branch 4.8.1
+git clone https://github.com/opencv/opencv_contrib.git --branch 4.8.1
+```
+```
+brew install cmake 
+conda create -n cv python=3.8 numpy
+```
 - Build and install
 ```
+mkdir opencv_build && cd opencv_build
+export ANACONDA_HOME=/Users/karmac/anaconda3/envs/cv
+
 cmake \
   -D CMAKE_BUILD_TYPE=Release \
   -D CMAKE_INSTALL_PREFIX=/usr/local \
   -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \
-  -D PYTHON3_EXECUTABLE=/Users/karmax/dev/miniconda3/envs/cv/bin/python3 \
-  -D PYTHON3_INCLUDE_DIR=/Users/karmax/dev/miniconda3/envs/cv/include/python3.8 \
-  -D PYTHON3_NUMPY_INCLUDE_DIRS=/Users/karmax/dev/miniconda3/envs/cv/lib/python3.8/site-packages/numpy/core/include \
+  -D PYTHON3_EXECUTABLE=${ANACONDA_HOME}/bin/python3 \
+  -D PYTHON3_INCLUDE_DIR=${ANACONDA_HOME}/include/python3.8 \
+  -D PYTHON3_NUMPY_INCLUDE_DIRS=${ANACONDA_HOME}/lib/python3.8/site-packages/numpy/core/include \
+  -D BUILD_opencv_python2=OFF \
+  -D BUILD_opencv_python3=ON \
+  -D INSTALL_PYTHON_EXAMPLES=ON \
+  -D OPENCV_ENABLE_NONFREE=ON \
+  -D BUILD_SHARED_LIBS=ON \
+  -D WITH_FFMPEG=ON \
+  -D BUILD_EXAMPLES=ON ../opencv
+```
+OR
+```
+cmake \
+  -DCMAKE_SYSTEM_PROCESSOR=arm64 \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DWITH_OPENJPEG=OFF \
+  -DWITH_IPP=OFF \
+  -D CMAKE_BUILD_TYPE=Release \
+  -D CMAKE_INSTALL_PREFIX=/usr/local \
+  -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \
+  -D PYTHON3_EXECUTABLE=${ANACONDA_HOME}/bin/python3 \
+  -D PYTHON3_INCLUDE_DIR=${ANACONDA_HOME}/include/python3.8 \
+  -D PYTHON3_NUMPY_INCLUDE_DIRS=${ANACONDA_HOME}/lib/python3.8/site-packages/numpy/core/include \
   -D BUILD_opencv_python2=OFF \
   -D BUILD_opencv_python3=ON \
   -D INSTALL_PYTHON_EXAMPLES=ON \
