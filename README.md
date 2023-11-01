@@ -1,7 +1,12 @@
 # INEYE
 Data Exploraiton and Sampling Toolkit for Videos. 
 - Visualize video streams and run basic detections
+  ``` python viz.py --video data/VIRAT_S_050201_05_000890_000944.mp4 ```
 - Sample frames at fixed frequency or based on detections 
+  ``` python viz.py --video data/VIRAT_S_010204_05_000856_000890.mp4 --save-frames True ```
+- Tool for video description
+  - Exif Tool [https://exiftool.org/index.html]
+  - FFMPEG [https://ffmpeg.org/]
 
 ##### Future Functions:
 - Multi Camera Capture (10 FPS at an interval-period of 1 Second)
