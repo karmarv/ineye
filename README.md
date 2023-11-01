@@ -2,8 +2,8 @@
 Data Exploraiton and Sampling Toolkit for Videos. 
 - Visualize video streams and run basic detections
   ``` python viz.py --video data/VIRAT_S_050201_05_000890_000944.mp4 ```
-- Sample frames at fixed frequency or based on detections 
-  ``` python viz.py --video data/VIRAT_S_010204_05_000856_000890.mp4 --save-frames True ```
+- Sample frames at fixed frequency (save-frames=0.1 for FPS/0.1 or 10xFPS rate) or based on detections 
+  ``` python viz.py --output-path "./data/output" --save-frames 0.1 --video-ext "mp4" --video data/```
 - Tool for video description
   - Exif Tool [https://exiftool.org/index.html]
   - FFMPEG [https://ffmpeg.org/]

@@ -20,12 +20,11 @@ def pprint(log_text, log_type="INFO", log_name="VIZ"):
 
 
 
-# ------------- OpenCV/Visualize ---------------- #
-
-
 class FrameExtractor:
-
-    def __init__(self, videopath, force_fps=None):
+    """
+    OpenCV & FFMPEG utility to sample frames in a video 
+    """
+    def __init__(self, videopath, force_fps=True):
         if type(videopath) == str:
             self.videopath = videopath    
             self.cap = cv.VideoCapture(videopath)
@@ -33,25 +32,31 @@ class FrameExtractor:
             self.frame_count = self.get_frame_count(force=True)
             self.duration, _, _, _, _ = self.get_ffmpeg_duration()
             if force_fps:
+                # TODO: Hard coded force_fps=True to compute on the fly for AVI files [default=None]
                 force_fps = self.frame_count/self.duration
-                pprint("Forced FPS as {}, original value is {}. Leveraging FFMPEG Duration: {}s".format(force_fps, self.fps, self.duration), log_type="WARN")
+                pprint("Forced FPS as {:.4f}, original value is {:.2f}. Leveraging FFMPEG Duration: {}s".format(force_fps, self.fps, self.duration), log_type="WARN")
                 self.fps = force_fps
             self.width  = int(self.cap.get(cv.CAP_PROP_FRAME_WIDTH))
             self.height = int(self.cap.get(cv.CAP_PROP_FRAME_HEIGHT))
         pprint("FPS:{:.2f}, (Frames: {}, Duration {:.2f} s), \t Video:{} ".format(self.fps, self.frame_count, self.frame_count/self.fps, videopath))
 
-    def vcrsecs_to_framenumber(self, vcrsecs):
-        frame_no = int(np.rint(vcrsecs * self.fps))
-        if frame_no >= self.frame_count(): # Frame OOB
-            frame_no = None
-        return frame_no
+    def vcrsecs_to_frame_id(self, vcrsecs):
+        frame_id = int(np.rint(vcrsecs * self.fps))
+        if frame_id >= self.frame_count(): 
+            # Frame index is OOB
+            frame_id = None
+        return frame_id
 
     # TODO: Slows down after a while when dealing with 100K frames
-    def image_from_frame(self, framenumber):
-        self.cap.set(cv.CAP_PROP_POS_FRAMES, framenumber)
+    def image_from_frame(self, frame_id):
+        self.cap.set(cv.CAP_PROP_POS_FRAMES, frame_id)
         _, img = self.cap.read()
         return img
 
+    """
+    Compute frame count by parsing all
+     - force=True will ensure that all readable frames are counted
+    """
     def get_frame_count(self, force=False):
         count = 0
         if not force:
@@ -69,6 +74,10 @@ class FrameExtractor:
                     pprint("OpenCV - loop frame count: {}".format(count))
         return count
    
+    """
+    FFMPEG-Python for video metadata. 
+     - More reliable than OpenCV for duration estimate
+    """
     def get_ffmpeg_duration(self):
         duration, frame_count, fps_video = 0, 0, 0
         width, height = 0, 0
@@ -91,6 +100,12 @@ class FrameExtractor:
         pprint("FFMPEG - duration:{} sec, frames:{}, fps:{}, W:{}, H:{}".format(duration, frame_count, fps_video, width, height))
         return duration, frame_count, fps_video, width, height
 
+    """
+    Sample frame indices at n_FPS
+     - n=1   for sampling at 1xFPS
+     - n=10  for FPS/10 or 0.1xFPS sampling frame rate
+     - n=0.1 for FPS/0.1 or 10xFPS sampling frame rate
+    """
     def sample_at_n_fps(self, X, n=1):
         # Determine maxSecs as per original frame rate
         maxFrameNo = X.shape[0] - 1
@@ -99,17 +114,21 @@ class FrameExtractor:
         indices_fps_round = np.rint(frmItems * (self.fps/n)).astype(int)
         return X[indices_fps_round]
         
+    """
+    Save frames sampled at FPS/n to a specified output directory
+    """
     def save_frames_at_n_fps(self, n_fps, output_path):
         filepath, extension = os.path.splitext(self.videopath)
+        basename = os.path.basename(filepath)
         if output_path is not None:
-            basename = os.path.basename(filepath)
             filepath = os.path.join(output_path, basename)
         filepath = "{}-{}".format(filepath, extension[1:])
         os.makedirs(filepath, exist_ok=True)
-        # Sample at n_FPS
+        # Sample indices to be extracted as frames
         indices_nfps = set(self.sample_at_n_fps(np.arange(self.frame_count+1), n_fps))
-        print("Sample count >>>", len(indices_nfps))
-        frame_id = 0      # Initial frame index
+        pprint("Sample count >>> {}, effective FPS:{:.4f} by using n_FPS:{} ".format(len(indices_nfps), self.fps/n_fps, n_fps ))
+        # Initialization of frame index
+        frame_id = 0      
         bad_frames = 0
         # Reset position of the video capture descriptor
         self.cap.set(cv.CAP_PROP_POS_FRAMES, 0)
@@ -119,17 +138,14 @@ class FrameExtractor:
                 ret, frame = self.cap.read()
                 if not ret: # Bad frame
                     bad_frames += 1
-                    print("{} bad frames - {}/{}".format(bad_frames, frame_id, self.frame_count))
                     if bad_frames >=10: 
-                        print("EXIT")
+                        pprint("{} multiple bad frames observed - {}/{}".format(bad_frames, frame_id, self.frame_count), log_type="WARN")
                         break
                 elif frame_id in indices_nfps:
-                    frame_path = os.path.join(filepath, "frame_{:08d}.jpg".format(frame_id))
+                    frame_path = os.path.join(filepath, "{}_frame_{:08d}.jpg".format(basename, frame_id))
                     cv.imwrite(frame_path, frame)
                     pbar.update(int(self.fps))
-            else:
-                print("frame_id is exhausted")
-        pprint('Unreadable frames {}'.format(bad_frames))
+        pprint('Extracted {}/{} frames to directory {}'.format(len(indices_nfps), self.frame_count, filepath))
         return filepath, indices_nfps
 
         
@@ -140,10 +156,8 @@ Extract Video frames at a specified frame rate
 def extract_video_frames(video_infile, n_fps, output_path):
     start = time.time()
     try:
-        # TODO: Hard coded force_fps=100.00 to compuute on the fly for AVI files [default=None]
-        frmx = FrameExtractor(video_infile, force_fps=100.00)  
-        filepath, idx_1fps = frmx.save_frames_at_n_fps(n_fps, output_path)
-        pprint('Extracted {}/{} frames to directory {}'.format(len(idx_1fps), frmx.frame_count, filepath))
+        frmx = FrameExtractor(video_infile)  
+        frmx.save_frames_at_n_fps(n_fps, output_path)
     except KeyboardInterrupt:
         pprint('Interrupted ctrl-c')
     finally:
@@ -156,56 +170,56 @@ def extract_video_frames(video_infile, n_fps, output_path):
 """
 Visualize the frame with control/progress bar
 """
-def plot_video_frames(video_infile, do_visualize=True):
+def plot_video_frames(video_infile):
     start = time.time()
     try:
+        # Initialize the Video Frame Extractor for sampling frames
         frmx = FrameExtractor(video_infile)
-        frame_count = frmx.frame_count
-        fps_video = frmx.fps
-        pprint("FPS:{:.2f}, (Frames: {}, Duration {:.2f}), \t Video:{} ".format(fps_video, frame_count, frame_count/fps_video, video_infile))
-        good_frames = 0
-        bad_frames = 0
-
-        cv_window_name = "FPS:{}, Frames:{}, Video:{}".format(fps_video, frame_count, os.path.basename(video_infile))
+        frame_count, fps = frmx.frame_count, frmx.fps
+        pprint("FPS:{:.2f}, (Frames: {}, Duration {:.2f}), \t Video:{} ".format(fps, frame_count, frame_count/fps, video_infile))
+        
+        # OpenCV windowing functions
+        cv_window_name = "FPS:{:.2f}, Frames:{}, Video:{}".format(fps, frame_count, os.path.basename(video_infile))
         def onCurrentFrameTrackbarChange(trackbarValue):
             pprint("Current Frames Value: {}".format(trackbarValue))
             pass
-        if do_visualize:
-            cv.namedWindow(cv_window_name) 
-            cv.createTrackbar('current-frame', cv_window_name, 1, frame_count, onCurrentFrameTrackbarChange)
+        cv.namedWindow(cv_window_name) 
+        cv.createTrackbar('current-frame', cv_window_name, 1, frame_count, onCurrentFrameTrackbarChange)
 
-        frame_id = 0      # Initial frame index
+        # Initialization of index and frame iteration
+        frame_id = 0
+        bad_frames = 0
         while frame_id < frame_count:
+            # Get the frame given its index
             img_from_frame = frmx.image_from_frame(frame_id)
             if img_from_frame is None: # Bad frame, skip
                 bad_frames += 1
                 continue
-
-            if do_visualize:
-                cv.setTrackbarPos('current-frame', cv_window_name, frame_id)
-                detect.detect(img_from_frame, do_overlay=True)
-                cv.imshow(cv_window_name, img_from_frame)
-
-                key = cv.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    pprint("Quit")
-                    break
-                
-                frame_id = cv.getTrackbarPos('current-frame', cv_window_name)
-                frame_id = frame_id + 1
+            
+            # Set the trackbar and show frame in opencv window
+            cv.setTrackbarPos('current-frame', cv_window_name, frame_id)
+            # Run detections and overlay image in window
+            detect.detect(img_from_frame, do_overlay=True)
+            cv.imshow(cv_window_name, img_from_frame)
+            key = cv.waitKey(1) & 0xFF
+            if key == ord('q'):
+                pprint("Quit")
+                break
+            
+            # Reset trackbar position to the current frame and proceed to next
+            frame_id = cv.getTrackbarPos('current-frame', cv_window_name)
+            frame_id = frame_id + 1
         else:
-            print("frame_id is exhausted")
+            print("All frames exhausted")
     except KeyboardInterrupt:
         pprint('Interrupted ctrl-c')
     finally:
         # The following frees up resources and closes all windows
         if frmx.cap:
             frmx.cap.release()
-
         cv.destroyAllWindows()
-        pprint("Completed in {} Sec \t - {} ".format(time.time()-start, video_infile))
+        pprint("Completed in {} Sec \t - {}, has {} bad frames ".format(time.time()-start, video_infile, bad_frames))
 
-    pprint('Video {} has {} bad frames.'.format(video_infile, bad_frames))
     return
 
 """
@@ -217,25 +231,25 @@ Usage:
     python viz.py --video data/VIRAT_S_010204_05_000856_000890.mp4 --save-frames 1
     python viz.py --output-path "./data/output" --save-frames 1 --video data/VIRAT_S_050201_05_000890_000944.mp4 
     python viz.py --output-path "./data/output" --save-frames 1 --video data/cctv_videopipe_2021030114.mp4 
-    python viz.py --output-path "./data/output" --save-frames 1 --video-ext ".mp4" --video data/
+    python viz.py --output-path "./data/output" --save-frames 0.1 --video-ext "mp4" --video data/
 """
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description='Download and process CCTV videos')
     parser.add_argument("--video",           type=str,   default=None)
     parser.add_argument("--video-ext",       type=str,   default="avi",  help="Video extensions: avi (default), mp4, etc")
-    parser.add_argument("--save-frames",     type=int,   default=0,  help="0 is default for plotting frames. 1 for sampling at 1FPS and otherwise a number below FPS to sample n`th frame")
+    parser.add_argument("--save-frames",     type=str,   default=None,   help="default None for plotting frames. 1 for sampling at 1xFPS; 10 for 0.1xFPS; 0.1 for 10xFPS")
     parser.add_argument("--output-path",     type=str,   default=None)
     args=parser.parse_args()
     pprint(args)
     if args.video is not None:           # Process single video sample
-        if args.save_frames:
+        if args.save_frames is not None:
             if os.path.isfile(args.video):
-                extract_video_frames(args.video, n_fps=args.save_frames, output_path=args.output_path)
+                extract_video_frames(args.video, n_fps=float(args.save_frames), output_path=args.output_path)
             elif  os.path.isdir(args.video):
                 glob_reg = "{}/**/*.{}".format(args.video, args.video_ext)
                 for filename in glob.glob(glob_reg, recursive=True):
                     pprint("Processing: {}".format(filename))
-                    extract_video_frames(filename, n_fps=args.save_frames, output_path=args.output_path)
+                    extract_video_frames(filename, n_fps=float(args.save_frames), output_path=args.output_path)
         else:    
             # Visualize video 
             plot_video_frames(args.video)
