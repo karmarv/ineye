@@ -1,6 +1,5 @@
 
 import os
-import re
 import glob
 import time
 import argparse
@@ -9,8 +8,6 @@ import ffmpeg
 import cv2 as cv
 import numpy as np
 from tqdm import tqdm
-
-import detect 
 
 """ 
     Print the log with timestamp 
@@ -199,7 +196,7 @@ def plot_video_frames(video_infile):
             # Set the trackbar and show frame in opencv window
             cv.setTrackbarPos('current-frame', cv_window_name, frame_id)
             # Run detections and overlay image in window
-            detect.detect(img_from_frame, do_overlay=True)
+            #detect.detect(img_from_frame, do_overlay=True)
             cv.imshow(cv_window_name, img_from_frame)
             key = cv.waitKey(1) & 0xFF
             if key == ord('q'):
@@ -222,6 +219,22 @@ def plot_video_frames(video_infile):
 
     return
 
+def main(args):
+    if args.video is not None:           # Process single video sample
+        if args.save_frames is not None:
+            if os.path.isfile(args.video):
+                extract_video_frames(args.video, n_fps=float(args.save_frames), output_path=args.output_path)
+            elif  os.path.isdir(args.video):
+                glob_reg = "{}/**/*.{}".format(args.video, args.video_ext)
+                for filename in glob.glob(glob_reg, recursive=True):
+                    pprint("Processing: {}".format(filename))
+                    extract_video_frames(filename, n_fps=float(args.save_frames), output_path=args.output_path)
+        else:    
+            # Visualize video 
+            plot_video_frames(args.video)
+    else:
+        pprint("No --video file/folder argument provided: {}".format(args))
+        
 """
 Usage: 
     Download and extract frames from the video for assessment
@@ -241,19 +254,5 @@ if __name__=='__main__':
     parser.add_argument("--output-path",     type=str,   default=None)
     args=parser.parse_args()
     pprint(args)
-    if args.video is not None:           # Process single video sample
-        if args.save_frames is not None:
-            if os.path.isfile(args.video):
-                extract_video_frames(args.video, n_fps=float(args.save_frames), output_path=args.output_path)
-            elif  os.path.isdir(args.video):
-                glob_reg = "{}/**/*.{}".format(args.video, args.video_ext)
-                for filename in glob.glob(glob_reg, recursive=True):
-                    pprint("Processing: {}".format(filename))
-                    extract_video_frames(filename, n_fps=float(args.save_frames), output_path=args.output_path)
-        else:    
-            # Visualize video 
-            plot_video_frames(args.video)
-    else:
-        pprint("No --video file/folder argument provided: {}".format(args))
-    
+    main(args)
     pprint("END")
