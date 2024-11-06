@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ineye"
-version = "0.0.1"
-description = "Vision data Exploraiton and Sampling Toolkit for Videos"
+version = "0.0.3"
+description = "Vision data exploration and frame sampling toolkit for videos"
 readme = "README.md"
 authors = [{ name = "Rahul Vishwakarma", email = "vishwakarma.rhl@gmail.com" }]
 license = { file = "LICENSE" }

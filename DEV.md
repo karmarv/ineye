@@ -1,3 +1,17 @@
+# Ineye Build packkage
+Reference: https://packaging.python.org/en/latest/tutorials/packaging-projects/
+- Build & Package
+```bash
+python3 -m pip install --upgrade build
+python3 -m build
+```
+- Publish to production https://pypi.org/search/?q=ineye
+```bash
+python3 -m pip install --upgrade twine
+python3 -m twine upload --repository pypi dist/*
+```
+
+
 
 # Docker
 

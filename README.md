@@ -1,5 +1,5 @@
 # INEYE
-Data Exploraiton and Sampling Toolkit for Videos. 
+Vision data exploration and frame sampling toolkit for videos
 - Visualize video streams and run basic detections
   ``` python viz.py --video data/VIRAT_S_050201_05_000890_000944.mp4 ```
 - Sample frames at fixed frequency (save-frames=0.1 for FPS/0.1 or 10xFPS rate) or based on detections 
